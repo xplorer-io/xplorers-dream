@@ -1,0 +1,96 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Xplorers Infrastructure'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  GithubBranch:
+    Default: GitHubBranchName
+    Description: The branch in use
+    Type: String
+  Environment:
+    Description: Environment to deploy. Use staging for limited resources and no alerts.
+    Type: String
+    Default: Dev
+    AllowedValues:
+    - Dev
+    - Staging
+    - Production
+  DynamoReadCapacityUnits:
+    Description: Read units for DynamoDB
+    Type: String
+    Default: 10
+  DynamoWriteCapacityUnits:
+    Description: Write units for DynamoDB
+    Type: String
+    Default: 10
+
+Resources:
+  DynamoDBTableCreateRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'Xplorers-DynamoDBTableCreateRole-${Environment}-${GithubBranch}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+               - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: xplorers-lambda-dynamodb-table-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:GetLogEvents
+                - logs:PutLogEvents
+                Resource: "arn:aws:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                - dynamodb:CreateTable
+                - dynamodb:UpdateTable
+                - dynamodb:CreateGlobalTable
+                - dynamodb:UpdateGlobalTable
+                - dynamodb:DescribeLimits
+                - dynamodb:DescribeGlobalTable
+                - application-autoscaling:DeleteScalingPolicy
+                - application-autoscaling:DeregisterScalableTarget
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                - cloudformation:ListExports
+                Resource: '*'
+
+  DynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+          TableName: !Sub 'Xplorers-DynamoDBTable-${Environment}-${GithubBranch}'
+          AttributeDefinitions:
+              -
+                  AttributeName: id
+                  AttributeType: S
+          KeySchema:
+              -
+                  AttributeName: id
+                  KeyType: HASH
+          ProvisionedThroughput:
+            ReadCapacityUnits: !Ref DynamoReadCapacityUnits
+            WriteCapacityUnits: !Ref DynamoWriteCapacityUnits
+
+Outputs:
+  XplorersTableArn:
+    Value: !GetAtt DynamoDbTable.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-XplorersTableArn"
+
+  XplorersTableName:
+    Value: !Ref DynamoDbTable
+    Export:
+      Name: !Sub "${AWS::StackName}-XplorersTableName"
