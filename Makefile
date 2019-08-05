@@ -26,7 +26,19 @@ deploy-dynamo:
 	$(info [+] Deploying Xplorer's factory for dynamo...)
 	@aws cloudformation deploy \
 		--template-file cloudformation/infrastructure.yaml \
-		--stack-name xplorers-factory-$(branch) \
+		--stack-name xplorers-factory-dynamo-$(branch) \
 		--capabilities CAPABILITY_NAMED_IAM \
 		--parameter-overrides \
 			GithubBranch=$(branch)
+
+write-to-dynamo:
+	$(info [+] Taking destinations.json and writing to dynamo...)
+	@aws dynamodb batch-write-item --request-items file://Destinations.json
+
+deploy-nodejs-lambda:
+	$(info [+] Deploying Weather Data Function...)
+	@aws cloudformation deploy \
+		--template-file cloudformation/deploy-node-runtime.yaml \
+		--stack-name xplorers-nodejs-runtime-$(branch) \
+		--capabilities CAPABILITY_NAMED_IAM
+

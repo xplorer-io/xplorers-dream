@@ -16,6 +16,14 @@ Parameters:
     - Dev
     - Staging
     - Production
+  DynamoReadCapacityUnits:
+    Description: Read units for DynamoDB
+    Type: String
+    Default: 10
+  DynamoWriteCapacityUnits:
+    Description: Write units for DynamoDB
+    Type: String
+    Default: 10
 
 Resources:
   DynamoDBTableCreateRole:
@@ -73,8 +81,8 @@ Resources:
                   AttributeName: id
                   KeyType: HASH
           ProvisionedThroughput:
-            ReadCapacityUnits: 10
-            WriteCapacityUnits: 10
+            ReadCapacityUnits: !Ref DynamoReadCapacityUnits
+            WriteCapacityUnits: !Ref DynamoWriteCapacityUnits
 
 Outputs:
   XplorersTableArn:
